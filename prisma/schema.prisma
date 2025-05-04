@@ -1,0 +1,113 @@
+// schema.prisma (versión en inglés)
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  name        String   
+  email       String   @unique
+  password    String   
+  role        String   
+  phoneNumber String   
+  nationalId  String   @unique
+  verified    Boolean  @default(false)
+  country     String   
+  city        String   
+  createdAt   DateTime @default(now())
+  
+  companionProfile CompanionProfile?
+  bookings         Booking[]
+}
+
+model CompanionProfile {
+  id             Int       @id @default(autoincrement())
+  userId         Int       @unique
+  age            Int         
+  hobbies        String?   
+  hourlyRate     Float     
+  availability   String?   
+  averageRating  Float     @default(0.0)
+  createdAt      DateTime  @default(now())
+  
+  user             User        @relation(fields: [userId], references: [id])
+  bookings         Booking[]
+  photos           Photo[]
+  tags             Tag[]
+  appointmentTypes AppointmentType[]
+}
+
+model Location {
+  id             Int     @id @default(autoincrement())
+  name           String  
+  city           String  
+  country        String  
+  coordinates    String  
+  isActive       Boolean @default(true)
+  adminCreated   Boolean @default(false)
+  createdAt      DateTime  @default(now())
+  
+  bookings Booking[]
+}
+
+model Booking {
+  id             Int       @id @default(autoincrement())
+  clientId       Int       
+  companionId    Int       
+  locationId     Int       
+  date           DateTime  
+  startTime      DateTime  
+  endTime        DateTime  
+  amount         Float     
+  status         String    
+  paymentMethod  String    
+  createdAt      DateTime  @default(now())
+  
+  client       User            @relation(fields: [clientId], references: [id])
+  companion    CompanionProfile @relation(fields: [companionId], references: [id])
+  location     Location        @relation(fields: [locationId], references: [id])
+  payment      Payment?
+}
+
+model Payment {
+  id                Int      @id @default(autoincrement())
+  bookingId         Int      @unique
+  totalAmount       Float    
+  commission        Float    
+  companionAmount   Float    
+  status            String   
+  paymentMethod     String   
+  date              DateTime @default(now())
+  createdAt      DateTime  @default(now())
+  
+  booking Booking @relation(fields: [bookingId], references: [id])
+}
+
+model Photo {
+  id          Int    @id @default(autoincrement())
+  profileId   Int    
+  url         String 
+  
+  companionProfile CompanionProfile @relation(fields: [profileId], references: [id])
+}
+
+model Tag {
+  id          Int    @id @default(autoincrement())
+  profileId   Int    
+  name        String 
+  
+  companionProfile CompanionProfile @relation(fields: [profileId], references: [id])
+}
+
+model AppointmentType {
+  id          Int    @id @default(autoincrement())
+  profileId   Int    
+  name        String 
+  
+  companionProfile CompanionProfile @relation(fields: [profileId], references: [id])
+}
