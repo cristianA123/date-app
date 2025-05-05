@@ -2,7 +2,6 @@ import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
-// import { User } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -10,9 +9,8 @@ export class AuthController {
 
   @Post('/login')
   async findOne(@Body() authDto: AuthDto) {
-    // 1. Validar usuario
     const user = await this.authService.validateUser(authDto);
-    // 2. Generar token
+
     return this.authService.login(user);
   }
 
