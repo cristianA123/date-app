@@ -14,11 +14,7 @@ model User {
   email       String   @unique
   password    String   
   role        String   
-  phoneNumber String   
-  nationalId  String   @unique
   verified    Boolean  @default(false)
-  country     String   
-  city        String   
   createdAt   DateTime @default(now())
   
   companionProfile CompanionProfile?
