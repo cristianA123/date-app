@@ -1,4 +1,4 @@
-// common/errors/user.errors.ts
+import { CodeError } from './codeError.error';
 import { HttpStatus } from '@nestjs/common';
 import { AppError } from './base.error';
 
@@ -7,7 +7,7 @@ export class UserNotFoundError extends AppError {
     super(
       `Usuario no encontrado: ${emailOrId}`,
       HttpStatus.NOT_FOUND,
-      'USER_NOT_FOUND',
+      CodeError.USER_NOT_FOUND,
       // { identifier: emailOrId },
     );
   }
@@ -18,7 +18,7 @@ export class UserAlreadyExistsError extends AppError {
     super(
       `El usuario con email ${email} ya existe`,
       HttpStatus.CONFLICT,
-      'USER_ALREADY_EXISTS',
+      CodeError.USER_ALREADY_EXISTS,
       // { email },
     );
   }

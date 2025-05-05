@@ -24,18 +24,30 @@ model User {
 model CompanionProfile {
   id             Int       @id @default(autoincrement())
   userId         Int       @unique
-  age            Int         
-  hobbies        String?   
-  hourlyRate     Float     
-  availability   String?   
-  averageRating  Float     @default(0.0)
+  name        String   
+  age            Int
+  contry         String?        
+  department      String 
+  district       String
+  description    String
+  imageUrl       String?
+  rating         Float?    @default(5.0)
+  price          Float
+  sexualOrientation String
+  height         Float
+  gender         String
+
+  hourlyRate     Float?     
+  availability   String?
+
   createdAt      DateTime  @default(now())
-  
+  updatedAt      DateTime  @default(now())
+
   user             User        @relation(fields: [userId], references: [id])
   bookings         Booking[]
   photos           Photo[]
   tags             Tag[]
-  appointmentTypes AppointmentType[]
+  dateTypes DateType[]
 }
 
 model Location {
@@ -100,7 +112,7 @@ model Tag {
   companionProfile CompanionProfile @relation(fields: [profileId], references: [id])
 }
 
-model AppointmentType {
+model DateType {
   id          Int    @id @default(autoincrement())
   profileId   Int    
   name        String 

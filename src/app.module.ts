@@ -6,9 +6,10 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaInterceptor } from './common/interceptors/prisma.interceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { CompanionModule } from './companion/companion.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, AuthModule],
+  imports: [PrismaModule, UserModule, AuthModule, CompanionModule],
   controllers: [AppController],
   providers: [
     AppService,
