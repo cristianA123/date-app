@@ -1,9 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UploadedFile } from '@nestjs/common';
 import { CreateCompanionDto } from './dto/create-companion.dto';
 import { UpdateCompanionDto } from './dto/update-companion.dto';
 import { PrismaService } from 'src/prisma-orm/prisma-orm.service';
 import { successResponse } from 'src/utils/response';
-import { CompanionAlreadyExistsError } from 'src/common/errors/companion.errors';
+import {
+  CompanionAlreadyExistsError,
+  CompanionNotExistsError,
+} from 'src/common/errors/companion.errors';
 
 @Injectable()
 export class CompanionService {
@@ -36,6 +39,29 @@ export class CompanionService {
     });
 
     return successResponse(companion);
+  }
+
+  async addPhoto(userId: number, @UploadedFile() file: Express.Multer.File) {
+    const companion = await this.prisma.companionProfile.findUnique({
+      where: {
+        userId: userId,
+      },
+    });
+    if (!companion) {
+      throw new CompanionNotExistsError(userId);
+    }
+    const photo = await this.prisma.photo.create({
+      data: {
+        url: file.path,
+        companionProfile: {
+          connect: {
+            id: companion.id,
+          },
+        },
+      },
+    });
+
+    return successResponse(photo);
   }
 
   findAll() {

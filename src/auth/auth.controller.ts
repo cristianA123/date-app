@@ -1,7 +1,8 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
+import { RequestWithUser } from './types/auth.types';
 
 @Controller('auth')
 export class AuthController {
@@ -16,8 +17,10 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('/private')
-  private() {
+  private(@Req() request: RequestWithUser) {
     // 1. Validar usuario
-    return { a: 'Aa' };
+    const user = request.user;
+    return { user, a: 'Aa' };
+    // return { a: 'Aa' };
   }
 }
