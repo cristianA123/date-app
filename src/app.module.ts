@@ -10,6 +10,7 @@ import { CompanionModule } from './companion/companion.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { MulterModule } from '@nestjs/platform-express';
+import { CompanionAttributesModule } from './companion-attributes/companion-attributes.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { MulterModule } from '@nestjs/platform-express';
     UserModule,
     AuthModule,
     CompanionModule,
+    CompanionAttributesModule,
   ],
   controllers: [AppController],
   providers: [

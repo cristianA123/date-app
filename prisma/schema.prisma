@@ -46,8 +46,8 @@ model CompanionProfile {
   user             User        @relation(fields: [userId], references: [id])
   bookings         Booking[]
   photos           Photo[]
-  tags             Tag[]
-  dateTypes DateType[]
+  tags      Tag[]      @relation("TagsToProfiles")
+  dateTypes DateType[] @relation("DateTypesToProfiles")
 }
 
 model Location {
@@ -105,17 +105,39 @@ model Photo {
 }
 
 model Tag {
-  id          Int    @id @default(autoincrement())
-  profileId   Int    
-  name        String 
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
   
-  companionProfile CompanionProfile @relation(fields: [profileId], references: [id])
+  profiles CompanionProfile[] @relation("TagsToProfiles")
 }
 
 model DateType {
-  id          Int    @id @default(autoincrement())
-  profileId   Int    
-  name        String 
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
   
-  companionProfile CompanionProfile @relation(fields: [profileId], references: [id])
+  profiles CompanionProfile[] @relation("DateTypesToProfiles")
 }
+
+// model Tag {
+//   id          Int    @id @default(autoincrement())
+//   profileId   Int    
+//   name        String 
+  
+//   companionProfile CompanionProfile @relation(fields: [profileId], references: [id])
+// }
+
+// model DateType {
+//   id          Int    @id @default(autoincrement())
+//   profileId   Int    
+//   name        String 
+  
+//   companionProfile CompanionProfile @relation(fields: [profileId], references: [id])
+// }

@@ -44,7 +44,9 @@ export class PrismaInterceptor implements NestInterceptor {
     switch (errorCode) {
       case 'P2002':
         const target = meta?.target?.[0] ?? 'registro';
-        return new ConflictException(`Ya existe un ${target} con estos datos`);
+        return new ConflictException(
+          `Ya existe un registro con estos datos. ${target}`,
+        );
 
       case 'P2025':
         return new NotFoundException('Registro no encontrado');

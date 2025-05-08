@@ -65,11 +65,39 @@ export class CompanionService {
   }
 
   findAll() {
-    return `This action returns all companion`;
+    return this.prisma.companionProfile.findMany({
+      select: {
+        id: true,
+        name: true,
+        age: true,
+        department: true,
+        price: true,
+        photos: {
+          select: {
+            url: true,
+          },
+          take: 1,
+        },
+      },
+    });
+
+    // devolver todos los companionProfiles con sus fotos
+    // return this.prisma.companionProfile.findMany({
+    //   include: {
+    //     photos: true,
+    //   },
+    // });
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} companion`;
+    return this.prisma.companionProfile.findUnique({
+      where: {
+        id: id,
+      },
+      include: {
+        photos: true,
+      },
+    });
   }
 
   update(id: number, updateCompanionDto: UpdateCompanionDto) {
