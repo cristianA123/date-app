@@ -8,6 +8,7 @@ import {
   CompanionNotExistsError,
 } from 'src/common/errors/companion.errors';
 import { SetTagToUserDto } from './dto/set-tag-to-companion.dto';
+import { SetDateTypeToUserDto } from './dto/set-date-type-to-companion.dto copy';
 
 @Injectable()
 export class CompanionService {
@@ -81,13 +82,6 @@ export class CompanionService {
         },
       },
     });
-
-    // devolver todos los companionProfiles con sus fotos
-    // return this.prisma.companionProfile.findMany({
-    //   include: {
-    //     photos: true,
-    //   },
-    // });
   }
 
   findOne(id: number) {
@@ -120,6 +114,29 @@ export class CompanionService {
       data: {
         tags: {
           connect: [...setTagToUserDto.tagIds], // IDs de los tags existentes
+        },
+      },
+    });
+    return successResponse(companionProfile);
+  }
+
+  async updateSetDateTypeToUser(setDateTypeToUserDto: SetDateTypeToUserDto) {
+    console.log(setDateTypeToUserDto);
+    const companion = await this.prisma.companionProfile.findUnique({
+      where: {
+        userId: setDateTypeToUserDto.userId,
+      },
+    });
+    if (!companion) {
+      throw new CompanionNotExistsError(setDateTypeToUserDto.userId);
+    }
+    const companionProfile = await this.prisma.companionProfile.update({
+      where: {
+        userId: setDateTypeToUserDto.userId,
+      },
+      data: {
+        dateTypes: {
+          connect: [...setDateTypeToUserDto.dateTypeIds], // IDs de los tags existentes
         },
       },
     });

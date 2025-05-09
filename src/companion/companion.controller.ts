@@ -21,6 +21,7 @@ import { extname } from 'path';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { RequestWithUser } from 'src/auth/types/auth.types';
 import { SetTagToUserDto } from './dto/set-tag-to-companion.dto';
+import { SetDateTypeToUserDto } from './dto/set-date-type-to-companion.dto copy';
 
 @Controller('companion')
 export class CompanionController {
@@ -84,6 +85,11 @@ export class CompanionController {
   @Post('/tag')
   updateSetTagToUser(@Body() setTagToUserDto: SetTagToUserDto) {
     return this.companionService.updateSetTagToUser(setTagToUserDto);
+  }
+
+  @Post('/date-type')
+  updateSetDateTypeToUser(@Body() setDateTypeToUserDto: SetDateTypeToUserDto) {
+    return this.companionService.updateSetDateTypeToUser(setDateTypeToUserDto);
   }
 
   @Get()
