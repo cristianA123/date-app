@@ -11,7 +11,7 @@ async function bootstrap() {
       // transform: true, // Transforma los tipos automáticamente
     }),
   );
-  await app.listen(process.env.PORT ?? 4000);
+  await app.listen(process.env.PORT ?? 5000);
 }
 bootstrap().catch((error) => {
   console.error('Failed to bootstrap application:', error);
