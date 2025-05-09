@@ -7,6 +7,7 @@ import {
   CompanionAlreadyExistsError,
   CompanionNotExistsError,
 } from 'src/common/errors/companion.errors';
+import { SetTagToUserDto } from './dto/set-tag-to-companion.dto';
 
 @Injectable()
 export class CompanionService {
@@ -96,8 +97,33 @@ export class CompanionService {
       },
       include: {
         photos: true,
+        tags: true,
+        dateTypes: true,
       },
     });
+  }
+
+  async updateSetTagToUser(setTagToUserDto: SetTagToUserDto) {
+    console.log(setTagToUserDto);
+    const companion = await this.prisma.companionProfile.findUnique({
+      where: {
+        userId: setTagToUserDto.userId,
+      },
+    });
+    if (!companion) {
+      throw new CompanionNotExistsError(setTagToUserDto.userId);
+    }
+    const companionProfile = await this.prisma.companionProfile.update({
+      where: {
+        userId: setTagToUserDto.userId,
+      },
+      data: {
+        tags: {
+          connect: [...setTagToUserDto.tagIds], // IDs de los tags existentes
+        },
+      },
+    });
+    return successResponse(companionProfile);
   }
 
   update(id: number, updateCompanionDto: UpdateCompanionDto) {

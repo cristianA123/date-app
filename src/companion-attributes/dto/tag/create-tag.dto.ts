@@ -1,6 +1,15 @@
-import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  MaxLength,
+  IsNumber,
+} from 'class-validator';
 
 export class CreateTagDto {
+  @IsNumber()
+  id?: number;
+
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)

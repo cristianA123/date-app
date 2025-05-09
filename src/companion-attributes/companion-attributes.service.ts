@@ -1,8 +1,8 @@
 import { PrismaService } from 'src/prisma-orm/prisma-orm.service';
-import { CreateTagDto } from './dto/create-tag.dto';
+import { CreateTagDto } from './dto/tag/create-tag.dto';
 import { Injectable } from '@nestjs/common';
 import { successResponse } from 'src/utils/response';
-import { CreateDateTypeDto } from './dto/create-date-type.dto';
+import { CreateDateTypeDto } from './dto/date-type/create-date-type.dto';
 
 @Injectable()
 export class CompanionAttributesService {

@@ -20,6 +20,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { RequestWithUser } from 'src/auth/types/auth.types';
+import { SetTagToUserDto } from './dto/set-tag-to-companion.dto';
 
 @Controller('companion')
 export class CompanionController {
@@ -78,6 +79,11 @@ export class CompanionController {
     //   size: file.size,
     //   url: `/uploads/${file.filename}`, // este es el path accesible vía navegador
     // };
+  }
+
+  @Post('/tag')
+  updateSetTagToUser(@Body() setTagToUserDto: SetTagToUserDto) {
+    return this.companionService.updateSetTagToUser(setTagToUserDto);
   }
 
   @Get()

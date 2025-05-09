@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { CompanionAttributesService } from './companion-attributes.service';
-import { CreateTagDto } from './dto/create-tag.dto';
-import { CreateDateTypeDto } from './dto/create-date-type.dto';
+import { CreateTagDto } from './dto/tag/create-tag.dto';
+import { CreateDateTypeDto } from './dto/date-type/create-date-type.dto';
 
 @Controller('companion-attributes')
 export class CompanionAttributesController {
