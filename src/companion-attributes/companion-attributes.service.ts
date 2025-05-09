@@ -7,13 +7,14 @@ import { CreateDateTypeDto } from './dto/date-type/create-date-type.dto';
 @Injectable()
 export class CompanionAttributesService {
   constructor(private prisma: PrismaService) {}
+
   async creatTage(createTagDto: CreateTagDto) {
-    const dateTypeExists = await this.prisma.tag.findFirst({
+    const tagExists = await this.prisma.tag.findFirst({
       where: {
         name: createTagDto.name,
       },
     });
-    if (!dateTypeExists) {
+    if (tagExists) {
       throw new Error('DateType already exists');
     }
 
@@ -22,6 +23,7 @@ export class CompanionAttributesService {
         name: createTagDto.name,
       },
     });
+
     return successResponse(tag);
   }
 
@@ -37,7 +39,7 @@ export class CompanionAttributesService {
         name: createDateTypeDto.name,
       },
     });
-    if (!dateTypeExists) {
+    if (dateTypeExists) {
       throw new Error('DateType already exists');
     }
     const tag = await this.prisma.dateType.create({

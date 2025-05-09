@@ -8,6 +8,7 @@ import {
 
 export class CreateTagDto {
   @IsNumber()
+  @IsOptional()
   id?: number;
 
   @IsString()
