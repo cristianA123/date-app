@@ -5,10 +5,14 @@ import { PrismaService } from 'src/prisma-orm/prisma-orm.service';
 import * as bcrypt from 'bcryptjs';
 import { successResponse } from 'src/utils/response';
 import { UserAlreadyExistsError } from 'src/common/errors';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private authService: AuthService,
+  ) {}
 
   private readonly SALT_ROUNDS = 10;
 
@@ -33,13 +37,14 @@ export class UserService {
         password: hashedPassword,
         role: 'USER',
       },
-      select: {
-        name: true,
-        email: true,
-        createdAt: true,
+      omit: {
+        password: true,
       },
     });
-    return successResponse(user);
+
+    const tokens = this.authService.generateTokens(user);
+
+    return successResponse({ user, ...tokens });
   }
 
   findAll() {

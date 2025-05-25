@@ -50,7 +50,7 @@ export class AuthService {
   }
 
   // Alternativa: JWT refresh tokens
-  generateTokens(user: UserWithoutPassword): TokenPair {
+  public generateTokens(user: UserWithoutPassword): TokenPair {
     const payload = { userId: user.id, email: user.email };
 
     // Access token (corta duración)
