@@ -43,14 +43,9 @@ export class UserService {
   }
 
   findAll() {
-    // devolver todos los usuarios
     return this.prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
+      omit: {
+        password: true,
       },
     });
   }

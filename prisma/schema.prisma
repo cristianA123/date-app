@@ -15,6 +15,14 @@ model User {
   password    String   
   role        String   
   verified    Boolean  @default(false)
+  birthday    DateTime?
+  gender      String?
+  contry      String?
+  department  String?
+  district    String?
+  imageUrl    String?
+  sexualOrientation String?
+  
   createdAt   DateTime @default(now())
   
   companionProfile CompanionProfile?
