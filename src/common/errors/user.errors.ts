@@ -13,10 +13,21 @@ export class UserNotFoundError extends AppError {
   }
 }
 
+export class UserNotFoundByIdError extends AppError {
+  constructor(id: string) {
+    super(
+      `Usuario no encontrado: ${id}`,
+      HttpStatus.NOT_FOUND,
+      CodeError.USER_NOT_FOUND,
+      // { identifier: emailOrId },
+    );
+  }
+}
+
 export class UserAlreadyExistsError extends AppError {
   constructor(email: string) {
     super(
-      `El usuario con email ${email} ya existe`,
+      `El email ${email} ya existe`,
       HttpStatus.CONFLICT,
       CodeError.USER_ALREADY_EXISTS,
       // { email },
