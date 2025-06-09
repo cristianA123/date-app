@@ -118,8 +118,17 @@ export class CompanionService {
     return where;
   }
 
-  findOne(id: number) {
-    return this.prisma.companionProfile.findUnique({
+  async findOne(id: number) {
+    const companionExists = await this.prisma.companionProfile.findUnique({
+      where: {
+        id: id,
+      },
+    });
+    if (!companionExists) {
+      throw new CompanionNotExistsError(id);
+    }
+
+    const detailCompanion = await this.prisma.companionProfile.findUnique({
       where: {
         id: id,
       },
@@ -129,6 +138,8 @@ export class CompanionService {
         dateTypes: true,
       },
     });
+
+    return successResponse(detailCompanion);
   }
 
   async updateSetTagToUser(setTagToUserDto: SetTagToUserDto) {
