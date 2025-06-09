@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable, UploadedFile } from '@nestjs/common';
 import { CreateCompanionDto } from './dto/create-companion.dto';
 import { UpdateCompanionDto } from './dto/update-companion.dto';
@@ -9,6 +13,7 @@ import {
 } from 'src/common/errors/companion.errors';
 import { SetTagToUserDto } from './dto/set-tag-to-companion.dto';
 import { SetDateTypeToUserDto } from './dto/set-date-type-to-companion.dto copy';
+import { CompanionFilterDto } from './dto/companion-filter.dto';
 
 @Injectable()
 export class CompanionService {
@@ -52,9 +57,12 @@ export class CompanionService {
     if (!companion) {
       throw new CompanionNotExistsError(userId);
     }
+
+    const normalizedPath = file.path.replace(/\\/g, '/');
+
     const photo = await this.prisma.photo.create({
       data: {
-        url: file.path,
+        url: normalizedPath,
         companionProfile: {
           connect: {
             id: companion.id,
@@ -66,12 +74,16 @@ export class CompanionService {
     return successResponse(photo);
   }
 
-  findAll() {
-    return this.prisma.companionProfile.findMany({
+  async findAll(filters: CompanionFilterDto) {
+    const filter = this.buildWhereConditions(filters);
+
+    const companion = await this.prisma.companionProfile.findMany({
+      where: filter,
       select: {
         id: true,
         name: true,
         age: true,
+        gender: true,
         department: true,
         price: true,
         photos: {
@@ -82,6 +94,28 @@ export class CompanionService {
         },
       },
     });
+    return successResponse(companion);
+  }
+
+  private buildWhereConditions(filters: any) {
+    const where: any = {};
+
+    if (filters.gender) where.gender = filters.gender;
+    if (filters.department) where.department = filters.department;
+
+    if (filters.minAge || filters.maxAge) {
+      where.age = {};
+      if (filters.minAge) where.age.gte = filters.minAge;
+      if (filters.maxAge) where.age.lte = filters.maxAge;
+    }
+
+    if (filters.minPrice || filters.maxPrice) {
+      where.price = {};
+      if (filters.minPrice) where.price.gte = filters.minPrice;
+      if (filters.maxPrice) where.price.lte = filters.maxPrice;
+    }
+
+    return where;
   }
 
   findOne(id: number) {

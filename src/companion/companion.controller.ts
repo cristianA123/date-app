@@ -11,6 +11,7 @@ import {
   BadRequestException,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { CompanionService } from './companion.service';
 import { CreateCompanionDto } from './dto/create-companion.dto';
@@ -22,6 +23,7 @@ import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { RequestWithUser } from 'src/auth/types/auth.types';
 import { SetTagToUserDto } from './dto/set-tag-to-companion.dto';
 import { SetDateTypeToUserDto } from './dto/set-date-type-to-companion.dto copy';
+import { CompanionFilterDto } from './dto/companion-filter.dto';
 
 @Controller('companion')
 export class CompanionController {
@@ -93,8 +95,8 @@ export class CompanionController {
   }
 
   @Get()
-  findAll() {
-    return this.companionService.findAll();
+  findAll(@Query() filter: CompanionFilterDto) {
+    return this.companionService.findAll(filter);
   }
 
   @Get(':id')
