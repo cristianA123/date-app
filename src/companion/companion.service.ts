@@ -101,6 +101,7 @@ export class CompanionService {
     const where: any = {};
 
     if (filters.gender) where.gender = filters.gender;
+    if (filters.age) where.age = filters.age;
     if (filters.department) where.department = filters.department;
 
     if (filters.minAge || filters.maxAge) {
@@ -113,6 +114,24 @@ export class CompanionService {
       where.price = {};
       if (filters.minPrice) where.price.gte = filters.minPrice;
       if (filters.maxPrice) where.price.lte = filters.maxPrice;
+    }
+    if (filters.tagIds) {
+      where.tags = {
+        some: {
+          name: {
+            in: filters.tags,
+          },
+        },
+      };
+    }
+    if (filters.dateTypeIds) {
+      where.dateTypes = {
+        some: {
+          name: {
+            in: filters.dateTypes,
+          },
+        },
+      };
     }
 
     return where;

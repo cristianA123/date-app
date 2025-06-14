@@ -40,6 +40,14 @@ export class CompanionFilterDto {
   maxPrice?: number;
 
   @IsOptional()
+  @IsString({ each: true })
+  tagIds?: string[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  dateTypeIds?: string[];
+
+  @IsOptional()
   @IsNumber()
   @Min(1)
   @Type(() => Number)

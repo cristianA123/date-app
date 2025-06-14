@@ -14,7 +14,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true, // Elimina propiedades no incluidas en el DTO
       forbidNonWhitelisted: true, // Rechaza requests con propiedades no permitidas
-      // transform: true, // Transforma los tipos automáticamente
+      transform: true, // Transforma los tipos automáticamente
     }),
   );
   await app.listen(process.env.PORT ?? 5000);
