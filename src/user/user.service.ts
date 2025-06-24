@@ -59,7 +59,27 @@ export class UserService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} user`;
+    const user = this.prisma.user.findFirst({
+      where:{id}
+    })
+
+    if(!user){
+     throw new UserNotFoundByIdError(id.toString());
+    }
+
+    return user;
+  }
+
+  findOneMe(id: number) {
+    const user = this.prisma.user.findFirst({
+      where:{id}
+    })
+
+    if(!user){
+     throw new UserNotFoundByIdError(id.toString());
+    }
+
+    return user;
   }
 
   async updateUser(id: number, updateUserDto: UpdateUserDto) {
