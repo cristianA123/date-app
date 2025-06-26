@@ -63,6 +63,7 @@ export class CompanionService {
     const photo = await this.prisma.photo.create({
       data: {
         url: normalizedPath,
+        cloudinaryId: `${Math.random()}-${new Date().toString()}`,
         companionProfile: {
           connect: {
             id: companion.id,
