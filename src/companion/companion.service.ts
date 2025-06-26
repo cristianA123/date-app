@@ -42,6 +42,9 @@ export class CompanionService {
         sexualOrientation: createCompanionDto.sexualOrientation,
         height: createCompanionDto.height,
         gender: createCompanionDto.gender,
+        availableFrom: createCompanionDto.availableFrom,
+        availableUntil: createCompanionDto.availableUntil,
+        maxBookingHours: createCompanionDto.maxBookingHours,
       },
     });
 

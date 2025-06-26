@@ -62,4 +62,16 @@ export class CreateCompanionDto {
   @IsOptional()
   @IsString()
   availability?: string;
+
+  @IsOptional()
+  @IsString()
+  availableFrom: string;
+
+  @IsOptional()
+  @IsString()
+  availableUntil?: string;
+
+  @IsOptional()
+  @IsString()
+  maxBookingHours?: number;
 }
