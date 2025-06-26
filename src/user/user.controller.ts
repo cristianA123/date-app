@@ -28,8 +28,7 @@ export class UserController {
   findAll() {
     return this.userService.findAll();
   }
-
-  
+ 
   @UseGuards(JwtAuthGuard)
   @Get('me')
   findOneMe(@User() user: PrismaUser) {
@@ -40,6 +39,12 @@ export class UserController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.userService.findOne(+id);
+  }
+
+   @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  updateUserMe(@User() user: PrismaUser, @Body() updateUserDto: UpdateUserDto) {
+    return this.userService.updateUser(user.id, updateUserDto);
   }
 
   @Patch(':id')
