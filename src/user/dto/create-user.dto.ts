@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsDate,
   IsEmail,
@@ -25,6 +26,7 @@ export class CreateUserDto {
 
   @IsDate()
   @IsOptional()
+  @Type(() => Date) // <- transforma string en Date antes de validarlo
   birthday?: Date;
 
   @IsString()

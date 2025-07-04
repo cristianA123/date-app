@@ -9,6 +9,7 @@ import {
   UserNotFoundByIdError,
 } from 'src/common/errors';
 import { AuthService } from 'src/auth/auth.service';
+import { User as PrismaUser } from '@prisma/client';
 
 @Injectable()
 export class UserService {
@@ -71,6 +72,7 @@ export class UserService {
   }
 
   findOneMe(id: number) {
+    console.log({id});
     const user = this.prisma.user.findFirst({
       where:{id}
     })
@@ -83,6 +85,7 @@ export class UserService {
   }
 
   async updateUser(id: number, updateUserDto: UpdateUserDto) {
+    console.log({updateUserDto});
     // Verificar si el usuario existe
     const userExists = await this.prisma.user.findUnique({
       where: { id },
@@ -116,10 +119,17 @@ export class UserService {
       dataToUpdate.password = hashedPassword;
     }
 
+    // if updateUserDto includes phone then set role companion
+    let updateData: any = {};
+    if(updateUserDto.phone){
+      updateData = { ...dataToUpdate };
+      updateData.role = 'companion';
+    }
+
     // Actualizar el usuario
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: dataToUpdate,
+      data: updateData,
       omit: {
         password: true,
       },
