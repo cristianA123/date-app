@@ -6,35 +6,85 @@
 
 import { Controller, Post, Body, Get } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
+import { CreatePaymentDto } from './dto/create-payment.dto';
+import { BookingService } from '../booking/booking.service';
+import { CreateBookingWithPaymentDto } from './dto/create-booking-with-payment.dto';
 
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly mercadoPagoService: PaymentsService) {}
+  constructor(
+    private readonly mercadoPagoService: PaymentsService,
+     private readonly bookingService: BookingService, // inyectar BookingService
+  ) {}
 
-  @Post('create-preference')
-  async createPreference(@Body() items: any) {
-    console.log(items);
+  /**
+   * Endpoint para crear una preferencia de pago de MercadoPago
+   * Solo crea la preferencia, no crea la reserva
+   */
+  @Post('preference')
+  async createPreference(@Body() dto: CreatePaymentDto) {
     const preferenceData = {
-      // items: [
-      //   {
-      //     title: 'Producto de prueba',
-      //     quantity: 1,
-      //     unit_price: 100,
-      //     currency_id: 'PEN',
-      //   },
-      // ],
-      items: items,
+      items: [
+        {
+          title: dto.title,
+          description: dto.description,
+          unit_price: dto.unit_price,
+          quantity: dto.quantity,
+          currency_id: dto.currency_id || 'PEN',
+        },
+      ],
       back_urls: {
-        success: 'http:/payments/success',
-        failure: 'https://bddb-201-234-117-65.ngrok-free.app/payments/failure',
-        pending: 'https://bddb-201-234-117-65.ngrok-free.app/payments/pending',
+        success: 'https://q21sd0v1-3000.brs.devtunnels.ms/payments/success',
+        failure: 'https://q21sd0v1-3000.brs.devtunnels.ms/payments/failure',
+        pending: 'https://q21sd0v1-3000.brs.devtunnels.ms/payments/pending',
       },
       auto_return: 'approved',
-      notification_url:
-        'https://bddb-201-234-117-65.ngrok-free.app/payments/webhook', // Para recibir notificaciones
+      notification_url: 'https://q21sd0v1-3000.brs.devtunnels.ms/payments/webhook',
+    };
+    return await this.mercadoPagoService.createPreference(preferenceData);
+  }
+
+  /**
+   * Endpoint para crear una reserva y asociar el pago
+   * Aquí deberías recibir el bookingDto y los datos de pago
+   */
+  @Post('booking')
+  async createBookingWithPayment(@Body() body: CreateBookingWithPaymentDto) {
+    const { bookingDto, paymentDto } = body;
+
+    // 1. Crear reserva
+    const bookingResponse = await this.bookingService.create({...bookingDto});
+    const booking = bookingResponse.data;
+
+    // 2. Generar preferencia con MercadoPago
+    const preferenceData = {
+      items: [
+        {
+          title: paymentDto.title,
+          description: paymentDto.description,
+          unit_price: paymentDto.unit_price,
+          quantity: paymentDto.quantity,
+          currency_id: paymentDto.currency_id || 'PEN',
+        },
+      ],
+      back_urls: {
+        success: `http://localhost:3000/payments/success?bookingId=${booking.id}`,
+        failure: `http://localhost:3000/payments/failure?bookingId=${booking.id}`,
+        pending: `http://localhost:3000/payments/pending?bookingId=${booking.id}`,
+      },
+      // auto_return: 'approved',
+      notification_url: `http://localhost:3000/payments/webhook`,
+      metadata: {
+        bookingId: booking.id,
+      },
     };
 
-    return await this.mercadoPagoService.createPreference(preferenceData);
+    const preference = await this.mercadoPagoService.createPreference(preferenceData);
+
+    return {
+      booking,
+      payment_preference: preference,
+    };
   }
 
   @Post('webhook')

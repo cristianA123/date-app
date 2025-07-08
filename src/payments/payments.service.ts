@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
+import { envs } from '../config/envs';
 
 @Injectable()
 export class PaymentsService {
@@ -10,8 +11,7 @@ export class PaymentsService {
 
   constructor() {
     this.client = new MercadoPagoConfig({
-      accessToken:
-        'APP_USR-5890058223446289-052416-eb5f4e3a92939022fcf8e1dfe57e5f3d-2459314690', // Cambiado de access_token a accessToken
+      accessToken:envs.MP_SECRET, // Cambiado de access_token a accessToken
       options: { timeout: 5000 },
       // Opcional: configuración de timeout
     });
