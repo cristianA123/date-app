@@ -12,6 +12,7 @@ import { join } from 'path';
 import { MulterModule } from '@nestjs/platform-express';
 import { CompanionAttributesModule } from './companion-attributes/companion-attributes.module';
 import { PaymentsModule } from './payments/payments.module';
+import { BookingModule } from './booking/booking.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { PaymentsModule } from './payments/payments.module';
     CompanionModule,
     CompanionAttributesModule,
     PaymentsModule,
+    BookingModule,
   ],
   controllers: [AppController],
   providers: [
