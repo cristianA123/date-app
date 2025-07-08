@@ -7,12 +7,12 @@ const prisma = new PrismaClient();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-      origin: ['http://localhost:3000', 'http://localhost:5173'],
-  methods: 'GET, POST, PUT, DELETE, PATCH',
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-token'],
-  credentials: true,
+    origin: ['http://localhost:3000', 'http://localhost:5173'],
+    methods: 'GET, POST, PUT, DELETE, PATCH',
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-token'],
+    credentials: true,
   });
-  app.setGlobalPrefix("api")
+  app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // Elimina propiedades no incluidas en el DTO
@@ -20,7 +20,7 @@ async function bootstrap() {
       transform: true, // Transforma los tipos automáticamente
     }),
   );
-  await app.listen(process.env.PORT ?? 5000);
+  await app.listen(process.env.PORT ?? 3000);
 }
 
 bootstrap().catch((error) => {
