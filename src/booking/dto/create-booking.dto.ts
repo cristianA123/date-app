@@ -26,7 +26,13 @@ export class CreateBookingDto {
     { allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 },
     { message: 'El monto debe ser un número válido con máximo 2 decimales.' }
   )
-  amount: number
+  companionAmount: number
+
+  @IsNumber(
+    { allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 },
+    { message: 'El amountTotal debe ser un número válido con máximo 2 decimales.' }
+  )
+  amountTotal: number
 
   @IsNumber(
     { allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 },
@@ -38,7 +44,7 @@ export class CreateBookingDto {
     { allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 },
     { message: 'El monto de impuesto debe ser un número válido con máximo 2 decimales.' }
   )
-  amountTax: number
+  commission: number
 
   @IsInt()
   @Min(1)

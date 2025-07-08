@@ -62,6 +62,16 @@ export class CompanionService {
       },
     });
 
+    // CREAR PAYMENT
+ 
+    // const payment = await this.prisma.payment.create({
+    //   data: {
+    //     amount: companionExists.data.price,
+    //     status: 'PENDING',
+    //     userId: createCompanionDto.userId,
+    //   },
+    // });
+
     return successResponse(companion);
   }
 

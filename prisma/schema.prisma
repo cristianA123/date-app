@@ -89,14 +89,15 @@ model Booking {
   date          DateTime
   startTime     DateTime
   endTime       DateTime
-  amount        Float
+  companionAmount        Float
   status        String
   paymentMethod String
 
   durationHours Int?
 
-  amountPerHour Float?
-  amountTax     Float?
+  amountPerHour Float
+  commission     Float
+  amountTotal     Float
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
