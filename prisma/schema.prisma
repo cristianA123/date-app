@@ -51,9 +51,9 @@ model CompanionProfile {
   hourlyRate   Float?
   availability String?
 
-availableFrom     String?  @default("00:00")
-availableUntil    String?  @default("23:59")
-maxBookingHours   Int?     @default(1)
+  availableFrom     String?  @default("00:00")
+  availableUntil    String?  @default("23:59")
+  maxBookingHours   Int?     @default(1)
 
 
   createdAt      DateTime  @default(now())
