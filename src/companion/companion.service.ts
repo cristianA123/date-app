@@ -14,12 +14,25 @@ import {
 import { SetTagToUserDto } from './dto/set-tag-to-companion.dto';
 import { SetDateTypeToUserDto } from './dto/set-date-type-to-companion.dto copy';
 import { CompanionFilterDto } from './dto/companion-filter.dto';
+import { UserNotFoundByIdError } from 'src/common/errors';
 
 @Injectable()
 export class CompanionService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createCompanionDto: CreateCompanionDto) {
+
+    // existe el usuario
+    const userExists = await this.prisma.user.findUnique({
+      where: {
+        id: createCompanionDto.userId,
+      },
+    })
+
+    if (!userExists) {
+      throw new UserNotFoundByIdError(createCompanionDto.userId.toString());
+    }
+
     const companionExists = await this.prisma.companionProfile.findUnique({
       where: {
         userId: createCompanionDto.userId,
@@ -32,19 +45,20 @@ export class CompanionService {
 
     const companion = await this.prisma.companionProfile.create({
       data: {
-        name: createCompanionDto.name,
-        age: createCompanionDto.age,
-        userId: createCompanionDto.userId,
-        department: createCompanionDto.department,
-        district: createCompanionDto.district,
-        description: createCompanionDto.description,
-        price: createCompanionDto.price,
-        sexualOrientation: createCompanionDto.sexualOrientation,
-        height: createCompanionDto.height,
-        gender: createCompanionDto.gender,
-        availableFrom: createCompanionDto.availableFrom,
-        availableUntil: createCompanionDto.availableUntil,
-        maxBookingHours: createCompanionDto.maxBookingHours,
+        ...createCompanionDto,
+        // name: createCompanionDto.name,
+        // age: createCompanionDto.age,
+        // userId: createCompanionDto.userId,
+        // department: createCompanionDto.department,
+        // district: createCompanionDto.district,
+        // description: createCompanionDto.description,
+        // price: createCompanionDto.price,
+        // sexualOrientation: createCompanionDto.sexualOrientation,
+        // height: createCompanionDto.height,
+        // gender: createCompanionDto.gender,
+        // availableFrom: createCompanionDto.availableFrom,
+        // availableUntil: createCompanionDto.availableUntil,
+        // maxBookingHours: createCompanionDto.maxBookingHours,
       },
     });
 
