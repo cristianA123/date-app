@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function main() {
     console.log("Se ejecuto el Seed");
-const clientPassword = await bcrypt.hash('clientpass', 10);
+const clientPassword = await bcrypt.hash('123456', 10);
   // 1. Crear usuario administrador
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@example.com' },
@@ -17,6 +17,19 @@ const clientPassword = await bcrypt.hash('clientpass', 10);
       email: 'admin@example.com',
       password: clientPassword, // Contraseña: Admin1234 (hasheada)
       role: 'admin',
+      phone: '+51987654321',
+      verified: true,
+    },
+  });
+
+  const testUser = await prisma.user.upsert({
+    where: { email: 'test@example.com' },
+    update: {},
+    create: {
+      name: 'test1',
+      email: 'test@example.com',
+      password: clientPassword, // Contraseña: Admin1234 (hasheada)
+      role: 'cliente',
       phone: '+51987654321',
       verified: true,
     },
@@ -93,11 +106,11 @@ const clientPassword = await bcrypt.hash('clientpass', 10);
   console.log('✅ Datos de prueba creados exitosamente!');
 }
 
-// main()
-//   .catch((e) => {
-//     console.error('Error en el seeder:', e);
-//     process.exit(1);
-//   })
-//   .finally(async () => {
-//     await prisma.$disconnect();
-//   });
+main()
+  .catch((e) => {
+    console.error('Error en el seeder:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
