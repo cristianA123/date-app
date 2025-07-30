@@ -35,7 +35,7 @@ export class CreateUserDto {
 
   @IsString()
   @IsOptional()
-  contry?: string;
+  country?: string;
 
   @IsString()
   @IsOptional()

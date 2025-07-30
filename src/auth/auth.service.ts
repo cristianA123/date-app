@@ -51,7 +51,7 @@ export class AuthService {
 
   // Alternativa: JWT refresh tokens
   public generateTokens(user: UserWithoutPassword): TokenPair {
-    const payload = { userId: user.id, email: user.email };
+    const payload = { userId: user.id.toString(), email: user.email };
 
     // Access token (corta duración)
     const accessToken = this.jwtService.sign(payload, {
@@ -61,7 +61,7 @@ export class AuthService {
     // Refresh token como JWT (larga duración)
     const refreshToken = this.jwtService.sign(
       {
-        userId: user.id,
+        userId: user.id.toString(),
         email: user.email,
         type: 'refresh',
         iat: Math.floor(Date.now() / 1000), // timestamp para rotación
@@ -88,7 +88,7 @@ export class AuthService {
 
       // Buscar usuario
       const user = await this.prisma.user.findUnique({
-        where: { id: payload.userId },
+        where: { id: parseInt(payload.userId) },
       });
 
       if (!user) {
@@ -100,7 +100,8 @@ export class AuthService {
 
       return successResponse({
         user: userWithoutPassword,
-        ...tokens,
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
       });
     } catch (error) {
       throw new UnauthorizedException('Refresh token inválido');
@@ -108,17 +109,37 @@ export class AuthService {
   }
 
   login(user: UserWithoutPassword) {
-    const payload = { userId: user.id, email: user.email };
     console.log(user);
-    // const token = this.jwtService.sign(payload);
     const tokens = this.generateTokens(user);
     const { accessToken, refreshToken } = tokens;
 
     const data = {
       user: { ...user },
-      accessToken,
+      token: accessToken,
       refreshToken,
     };
     return successResponse(data);
+  }
+
+  async renewToken(userFromToken: any) {
+    // Buscar usuario completo en la base de datos para obtener información actualizada
+    const user = await this.prisma.user.findUnique({
+      where: { id: parseInt(userFromToken.userId) },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Usuario no encontrado');
+    }
+
+    const { password, ...userWithoutPassword } = user;
+    
+    // Generar nuevos tokens
+    const tokens = this.generateTokens(userWithoutPassword);
+
+    return successResponse({
+      user: userWithoutPassword,
+      token: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    });
   }
 }

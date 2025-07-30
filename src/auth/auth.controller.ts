@@ -1,7 +1,7 @@
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
+import { Controller, Post, Get, Body, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
-import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { RequestWithUser } from './types/auth.types';
 import { RefreshDto } from './dto/refresh.dto';
 
@@ -28,5 +28,14 @@ export class AuthController {
     const user = request.user;
     return { user, a: 'Aa' };
     // return { a: 'Aa' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/renew')
+  async renew(@Req() request: RequestWithUser) {
+    console.log("renew")
+    const user = request.user;
+    console.log({user})
+    return this.authService.renewToken(user);
   }
 }

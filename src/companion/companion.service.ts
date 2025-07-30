@@ -1,8 +1,9 @@
+import { ImageUploadService } from './../image-upload/image-upload.service';
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { Injectable, UploadedFile } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, UploadedFile } from '@nestjs/common';
 import { CreateCompanionDto } from './dto/create-companion.dto';
 import { UpdateCompanionDto } from './dto/update-companion.dto';
 import { PrismaService } from 'src/prisma-orm/prisma-orm.service';
@@ -18,7 +19,9 @@ import { UserNotFoundByIdError } from 'src/common/errors';
 
 @Injectable()
 export class CompanionService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(CompanionService.name);
+  constructor(  private readonly prisma: PrismaService,
+    private readonly imageUploadService: ImageUploadService) {}
 
   async create(createCompanionDto: CreateCompanionDto) {
 
@@ -92,8 +95,66 @@ export class CompanionService {
     return successResponse(photo);
   }
 
+  async uploadAndAddPhotos(
+    userId: number,
+    files: Array<Express.Multer.File>,
+  ) {
+    const companionProfile = await this.prisma.companionProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!companionProfile) {
+      throw new CompanionNotExistsError(userId);
+    }
+
+    const uploadedPhotosInfo:any[] = [];
+
+    for (const file of files) {
+      try {
+        const uploadResult = await this.imageUploadService.uploadImage(
+          file.buffer,
+          `${userId}_${companionProfile.id}_${Date.now()}`, // Generar un nombre de archivo único
+        );
+
+        const photo = await this.prisma.photo.create({
+          data: {
+            url: uploadResult.secure_url,
+            cloudinaryId: uploadResult.public_id,
+            companionProfile: {
+              connect: {
+                id: companionProfile.id,
+              },
+            },
+          },
+        });
+        uploadedPhotosInfo.push({
+          url: photo.url,
+          cloudinaryId: photo.cloudinaryId,
+        });
+      } catch (error) {
+        this.logger.error(
+          `Error uploading image for user ${userId}: ${error.message}`,
+          error.stack,
+        );
+        // Considerar si continuar con otras imágenes o lanzar un error general.
+        // Por ahora, se registrará el error y se continuará.
+        // Podría ser mejor acumular errores y devolverlos.
+        throw new InternalServerErrorException(
+          `Error al subir la imagen ${file.originalname}: ${error.message}`,
+        );
+      }
+    }
+
+    return successResponse(
+      uploadedPhotosInfo
+    );
+  }
+
   async findAll(filters: CompanionFilterDto) {
     const filter = this.buildWhereConditions(filters);
+    
+    // Agregar filtro para mostrar solo perfiles aprobados
+    filter.isApproved = true;
 
     const companion = await this.prisma.companionProfile.findMany({
       where: filter,
@@ -104,6 +165,7 @@ export class CompanionService {
         gender: true,
         department: true,
         price: true,
+        isApproved: true,
         photos: {
           select: {
             url: true,
@@ -113,6 +175,44 @@ export class CompanionService {
       },
     });
     return successResponse(companion);
+  }
+
+  async findAllForAdmin(filters?: CompanionFilterDto) {
+    const filter = filters ? this.buildWhereConditions(filters) : {};
+    
+    // Para admin, mostrar todos los perfiles (aprobados y no aprobados)
+    const companions = await this.prisma.companionProfile.findMany({
+      where: filter,
+      select: {
+        id: true,
+        name: true,
+        age: true,
+        gender: true,
+        department: true,
+        price: true,
+        isApproved: true,
+        createdAt: true,
+        updatedAt: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        photos: {
+          select: {
+            url: true,
+          },
+          take: 1,
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    
+    return successResponse(companions);
   }
 
   private buildWhereConditions(filters: any) {
@@ -225,9 +325,101 @@ export class CompanionService {
     return successResponse(companionProfile);
   }
 
-  update(id: number, updateCompanionDto: UpdateCompanionDto) {
-    console.log(updateCompanionDto);
-    return `This action updates a #${id} companion`;
+  async update(id: number, updateCompanionDto: UpdateCompanionDto) {
+    try {
+      console.log('Updating companion profile:', id, updateCompanionDto);
+      
+      const updatedCompanion = await this.prisma.companionProfile.update({
+        where: { id },
+        data: updateCompanionDto,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
+          },
+          photos: true,
+          tags: true,
+          dateTypes: true,
+        },
+      });
+
+      return successResponse(updatedCompanion);
+    } catch (error) {
+      console.error('Error updating companion profile:', error);
+      throw new InternalServerErrorException('Error al actualizar el perfil del acompañante');
+    }
+  }
+
+  async approveCompanion(id: number) {
+    try {
+      const companion = await this.prisma.companionProfile.findUnique({
+        where: { id },
+      });
+
+      if (!companion) {
+        throw new CompanionNotExistsError(id);
+      }
+
+      const updatedCompanion = await this.prisma.companionProfile.update({
+        where: { id },
+        data: { isApproved: true },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          photos: true,
+          tags: true,
+          dateTypes: true,
+        },
+      });
+
+      return successResponse(updatedCompanion);
+    } catch (error) {
+      console.error('Error approving companion:', error);
+      throw new InternalServerErrorException('Error al aprobar el acompañante');
+    }
+  }
+
+  async rejectCompanion(id: number) {
+    try {
+      const companion = await this.prisma.companionProfile.findUnique({
+        where: { id },
+      });
+
+      if (!companion) {
+        throw new CompanionNotExistsError(id);
+      }
+
+      const updatedCompanion = await this.prisma.companionProfile.update({
+        where: { id },
+        data: { isApproved: false },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          photos: true,
+          tags: true,
+          dateTypes: true,
+        },
+      });
+
+      return successResponse(updatedCompanion);
+    } catch (error) {
+      console.error('Error rejecting companion:', error);
+      throw new InternalServerErrorException('Error al rechazar el acompañante');
+    }
   }
 
   remove(id: number) {

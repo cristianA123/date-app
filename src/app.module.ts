@@ -13,9 +13,15 @@ import { MulterModule } from '@nestjs/platform-express';
 import { CompanionAttributesModule } from './companion-attributes/companion-attributes.module';
 import { PaymentsModule } from './payments/payments.module';
 import { BookingModule } from './booking/booking.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ImageUploadModule } from './image-upload/image-upload.module';
+import { TasksModule } from './tasks/tasks.module';
+import { CreditsModule } from './credits/credits.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
@@ -30,6 +36,10 @@ import { BookingModule } from './booking/booking.module';
     CompanionAttributesModule,
     PaymentsModule,
     BookingModule,
+    ImageUploadModule,
+    TasksModule,
+    CreditsModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [

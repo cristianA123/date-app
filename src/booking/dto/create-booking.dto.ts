@@ -1,6 +1,5 @@
 // export class CreateBookingDto {}
 
-import { Optional } from '@nestjs/common'
 import { IsInt, IsDateString, IsString, Min, MaxLength, IsOptional, IsNumber } from 'class-validator'
 
 export class CreateBookingDto {
@@ -29,26 +28,33 @@ export class CreateBookingDto {
   )
   amount: number
 
+  @IsOptional()
   @IsNumber(
     { allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 },
     { message: 'El monto por hora debe ser un número válido con máximo 2 decimales.' }
   )
-  @Optional()
-  amountPerHour: number
+  amountPerHour?: number
 
+  @IsOptional()
   @IsNumber(
     { allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 },
     { message: 'El monto de impuesto debe ser un número válido con máximo 2 decimales.' }
   )
-  @Optional()
-  amountTax: number
+  amountTax?: number
 
+  @IsOptional()
   @IsInt()
   @Min(1)
-  @Optional()
-  durationHours: number
+  durationHours?: number
 
   @IsString()
   @MaxLength(30)
   paymentMethod: string // "Yape", "Card", etc.
+
+  @IsOptional()
+  @IsNumber(
+    { allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 },
+    { message: 'Los créditos usados deben ser un número válido con máximo 2 decimales.' }
+  )
+  creditsUsed?: number
 }

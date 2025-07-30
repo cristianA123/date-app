@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsInt,
   IsUrl,
+  IsBoolean,
   Min,
   Max,
 } from 'class-validator';
@@ -74,4 +75,33 @@ export class CreateCompanionDto {
   @IsOptional()
   @IsInt()
   maxBookingHours?: number;
+
+  // Disponibilidad por días de la semana
+  @IsOptional()
+  @IsBoolean()
+  availableMonday?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  availableTuesday?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  availableWednesday?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  availableThursday?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  availableFriday?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  availableSaturday?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  availableSunday?: boolean;
 }

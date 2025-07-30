@@ -34,9 +34,9 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  findOneMe(@User() user: { userId: number, email: string }) {
+  findOneMe(@User() user: { userId: string, email: string }) {
     console.log({ user });
-    return this.userService.findOneMe(user.userId);
+    return this.userService.findOneMe(parseInt(user.userId));
   }
 
   @Get(':id')
@@ -46,14 +46,19 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('me')
-  @UseInterceptors(FileInterceptor('file')) // solo si vas a enviar un archivo
+  @UseInterceptors(FileInterceptor('file', { 
+    fileFilter: (req, file, cb) => {
+      // Permitir que el interceptor funcione incluso sin archivo
+      cb(null, true);
+    }
+  }))
   updateUserMe(
-    @User() user: { userId: number, email: string },
+    @User() user: { userId: string, email: string },
     @UploadedFile() file: Express.Multer.File,
     @Body() updateUserDto: UpdateUserDto
   ) {
-      console.log({ updateUserDto, file });
-    return this.userService.updateUser(user.userId, updateUserDto);
+    console.log('Updating user profile:', { updateUserDto, file, userId: user.userId });
+    return this.userService.updateUser(parseInt(user.userId), updateUserDto);
   }
 
   @Patch(':id')

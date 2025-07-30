@@ -4,17 +4,19 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { BookingService } from '../booking/booking.service';
 import { CreateBookingWithPaymentDto } from './dto/create-booking-with-payment.dto';
+import { CreditsService } from '../credits/credits.service';
 
 @Controller('payments')
 export class PaymentsController {
   constructor(
     private readonly mercadoPagoService: PaymentsService,
      private readonly bookingService: BookingService, // inyectar BookingService
+     private readonly creditTransactionService: CreditsService, // inyectar CreditsService
   ) {}
 
   /**
@@ -39,7 +41,7 @@ export class PaymentsController {
         pending: 'https://q21sd0v1-3000.brs.devtunnels.ms/payments/pending',
       },
       auto_return: 'approved',
-      notification_url: 'https://q21sd0v1-3000.brs.devtunnels.ms/payments/webhook',
+      notification_url: 'https://q21sd0v1-4000.brs.devtunnels.ms/payments/webhook',
     };
     return await this.mercadoPagoService.createPreference(preferenceData);
   }
@@ -48,70 +50,98 @@ export class PaymentsController {
    * Endpoint para crear una reserva y asociar el pago
    * Aquí deberías recibir el bookingDto y los datos de pago
    */
+  @Post('create-payment')
+  async createPayment(@Body() body: CreateBookingWithPaymentDto) {
+    try {
+      console.log('Received payment request:', body);
+      return await this.createBookingWithPayment(body);
+    } catch (error) {
+      console.error('Error in createPayment:', error);
+      throw error;
+    }
+  }
+
   @Post('booking')
   async createBookingWithPayment(@Body() body: CreateBookingWithPaymentDto) {
-    const { bookingDto, paymentDto } = body;
+    try {
+      const { bookingDto, paymentDto } = body;
+      console.log('Creating booking with data:', bookingDto);
 
-    // 1. Crear reserva
-    const bookingResponse = await this.bookingService.create({...bookingDto});
-    const booking = bookingResponse.data;
+      // 1. Crear reserva
+      const bookingResponse = await this.bookingService.create({...bookingDto});
+      console.log('Booking created successfully:', bookingResponse);
+      const booking = bookingResponse.data;
 
-    // 2. Generar preferencia con MercadoPago
-    const preferenceData = {
-      items: [
-        {
-          title: paymentDto.title,
-          description: paymentDto.description,
-          unit_price: paymentDto.unit_price,
-          quantity: paymentDto.quantity,
-          currency_id: paymentDto.currency_id || 'PEN',
+      // 2. Generar preferencia con MercadoPago
+      const preferenceData = {
+        items: [
+          {
+            title: paymentDto.title,
+            description: paymentDto.description,
+            unit_price: paymentDto.unit_price,
+            quantity: paymentDto.quantity,
+            currency_id: paymentDto.currency_id || 'PEN',
+          },
+        ],
+        back_urls: {
+          success: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/success?bookingId=${booking.id}`,
+          failure: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/failure?bookingId=${booking.id}`,
+          pending: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/pending?bookingId=${booking.id}`,
         },
-      ],
-      back_urls: {
-        success: `http://localhost:3000/payments/success?bookingId=${booking.id}`,
-        failure: `http://localhost:3000/payments/failure?bookingId=${booking.id}`,
-        pending: `http://localhost:3000/payments/pending?bookingId=${booking.id}`,
-      },
-      // auto_return: 'approved',
-      notification_url: `http://localhost:3000/payments/webhook`,
-      metadata: {
-        bookingId: booking.id,
-      },
-    };
+        // auto_return: 'approved',
+        notification_url: `https://q21sd0v1-4000.brs.devtunnels.ms/payments/webhook`,
+        metadata: {
+          bookingId: booking.id,
+        },
+      };
 
-    const preference = await this.mercadoPagoService.createPreference(preferenceData);
+      console.log('Creating MercadoPago preference with data:', preferenceData);
+      const preference = await this.mercadoPagoService.createPreference(preferenceData);
+      console.log('MercadoPago preference created successfully');
 
-    return {
-      booking,
-      payment_preference: preference,
-    };
+      return {
+        success: true,
+        data: {
+          booking,
+          payment_preference: preference,
+        },
+      };
+    } catch (error) {
+      console.error('Error in createBookingWithPayment:', error);
+      console.error('Error stack:', error.stack);
+      throw error;
+    }
   }
 
   @Post('webhook')
-  async handleWebhook(@Body() data: any) {
+  async handleWebhook(@Query() data: any) {
     // // Aquí procesas las notificaciones de pago
-    // console.log('Webhook received:', notification);
+    console.log('Webhook received:', data);
     // return { status: 'ok' };
     try {
       if (data.type === 'payment') {
-        const paymentId = data.data.id;
+        const paymentId = data['data.id'] || data?.data?.id;
 
         // Obtener detalles del pago desde Mercado Pago
         const payment = await this.mercadoPagoService.getPayment(paymentId);
         // const preferenceId = payment.body.preference_id;
         console.log('pago');
         console.log(payment);
-        console.log('pago');
-        // Actualizar el estado del pago en la base de datos
-        // await this.prisma.payment.updateMany({
-        //   where: { preferenceId },
-        //   data: {
-        //     status: this.mapPaymentStatus(payment.body.status),
-        //     paymentId: String(paymentId),
-        //     paymentDetails: JSON.stringify(payment.body),
-        //   },
-        // });
 
+        // Actualizar el estado del credit transaction y actualizar el estado del booking
+        if (payment.status === 'approved') {
+          const referenceId = payment.metadata.external_reference;
+          console.log('Updating booking status for bookingId:', referenceId);
+          // await this.bookingService.updateBookingStatus(bookingId, 'confirmed');
+          await this.creditTransactionService.confirmCreditPurchase(referenceId, 'approved');
+          console.log('Booking status updated to confirmed');
+        } else if (payment.status === 'rejected' || payment.status === 'in_process') {
+          const referenceId = payment.metadata.external_reference;
+          console.log('Updating booking status for bookingId:', referenceId);
+          // await this.bookingService.updateBookingStatus(bookingId, 'failed');
+          await this.creditTransactionService.confirmCreditPurchase(referenceId, 'rejected');
+          console.log('Booking status updated to failed');
+        }
         // Aquí puedes agregar lógica adicional según el estado del pago
         // Por ejemplo, activar una suscripción, enviar un correo, etc.
       }
@@ -140,5 +170,10 @@ export class PaymentsController {
     // Aquí puedes redirigir al usuario a una página de pendiente
     console.log('Pago pendiente');
     return 'Pago pendiente';
+  }
+
+  @Get('test-connection')
+  async testMercadoPagoConnection() {
+    return await this.mercadoPagoService.testConnection();
   }
 }

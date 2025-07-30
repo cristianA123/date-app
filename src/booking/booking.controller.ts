@@ -17,6 +17,29 @@ export class BookingController {
     return this.bookingService.findAll();
   }
 
+  @Get('/client/:clientId')
+  findByClient(@Param('clientId') clientId: string) {
+    return this.bookingService.findByClient(+clientId);
+  }
+
+  @Get('/companion/:companionId')
+  findByCompanion(@Param('companionId') companionId: string) {
+    return this.bookingService.findByCompanion(+companionId);
+  }
+
+  @Get('/companion/:companionId/pending')
+  findPendingByCompanion(@Param('companionId') companionId: string) {
+    return this.bookingService.findPendingByCompanion(+companionId);
+  }
+
+  @Patch('/:bookingId/status')
+  updateBookingStatus(
+    @Param('bookingId') bookingId: string, 
+    @Body() statusData: { status: string; companionId?: number }
+  ) {
+    return this.bookingService.updateBookingStatus(+bookingId, statusData.status, statusData.companionId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.bookingService.findOne(+id);
@@ -30,5 +53,10 @@ export class BookingController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.bookingService.remove(+id);
+  }
+
+  @Post('/seed')
+  seedTestData() {
+    return this.bookingService.seedTestData();
   }
 }
