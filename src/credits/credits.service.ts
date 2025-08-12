@@ -4,15 +4,55 @@ import { PaymentsService } from '../payments/payments.service';
 import { PurchaseCreditsDto } from './dto/purchase-credits.dto';
 import { UseCreditsDto } from './dto/use-credits.dto';
 
+interface CreditPackage {
+  id: string;
+  credits: number;
+  price: number;
+  bonus?: number;
+  savings?: string;
+  popular?: boolean;
+}
+
+const creditPackages: CreditPackage[] = [
+  {
+    id: "starter",
+    credits: 10,
+    price: 50,
+    savings: "Ideal para empezar",
+  },
+  {
+    id: "popular",
+    credits: 27.5,
+    price: 125,
+    bonus: 2.5,
+    popular: true,
+    savings: "Ahorra 6%",
+  },
+  {
+    id: "value",
+    credits: 57.5,
+    price: 250,
+    bonus: 7.5,
+    savings: "Ahorra 10%",
+  },
+  {
+    id: "premium",
+    credits: 120,
+    price: 500,
+    bonus: 20,
+    savings: "Ahorra 13%",
+  },
+];
+
 @Injectable()
 export class CreditsService {
-  private readonly CREDIT_PRICE_PEN = 1.5;
+  private readonly CREDIT_PRICE_PEN = 5; // 1 crédito = S/ 5.00
 
   constructor(
     private prisma: PrismaService,
     @Inject(forwardRef(() => PaymentsService))
     private paymentsService: PaymentsService,
-  ) {}
+  ) { }
 
   async getUserCredits(userId: number) {
     const user = await this.prisma.user.findUnique({
@@ -28,54 +68,60 @@ export class CreditsService {
   }
 
   async purchaseCredits(userId: number, purchaseData: PurchaseCreditsDto) {
-    const totalAmount = Math.round(purchaseData.amount * this.CREDIT_PRICE_PEN * 100) / 100;
+    // const totalAmount = Math.round(purchaseData.amount * this.CREDIT_PRICE_PEN * 100) / 100;
+    const externalReference = `user_${ userId }_${ Date.now() }`;
 
-    // Generar referencia externa única
-    const externalReference = `user_${userId}_${Date.now()}`;
+    let totalCredits: number;
+    let totalAmount: number;
+    let description: string;
 
-    // Crear preferencia de MercadoPago
-    console.log('🔄 Creando preferencia de MercadoPago para créditos...');
+    if (purchaseData.packageId === 'custom') {
+      if (!purchaseData.amount || isNaN(purchaseData.amount)) {
+        throw new Error('Cantidad personalizada inválida');
+      }
+
+      totalCredits = purchaseData.amount;
+      totalAmount = Math.round(totalCredits * this.CREDIT_PRICE_PEN * 100) / 100;
+
+      description = `Compra personalizada de ${ totalCredits } créditos`;
+
+    } else {
+      const selectedPackage = creditPackages.find(pkg => pkg.id === purchaseData.packageId);
+
+      if (!selectedPackage) {
+        throw new Error("Paquete no válido");
+      }
+
+      totalCredits = selectedPackage.credits + (selectedPackage.bonus || 0);
+      totalAmount = selectedPackage.price;
+
+      description = `Compra del paquete ${ selectedPackage.id } (${ totalCredits } créditos)`;
+    }
+
     const preference = await this.paymentsService.createPreference({
       items: [
         {
-          title: `${purchaseData.amount} Créditos - Dating App`,
+          title: `${ totalCredits } Créditos - Dating App`,
           quantity: 1,
           unit_price: totalAmount,
           currency_id: 'PEN',
-          description: `Compra de ${purchaseData.amount} créditos para reservas`,
+          description,
         },
       ],
       metadata: {
         type: 'credits',
         userId: userId.toString(),
-        credits: purchaseData.amount.toString(),
+        credits: totalCredits.toString(),
         external_reference: externalReference,
       },
       external_reference: externalReference,
       statement_descriptor: 'DATING_APP_CREDITS',
     });
 
-    console.log('📋 Preferencia recibida:', {
-      id: preference.id,
-      init_point: (preference as any).init_point,
-      sandbox_init_point: preference.sandbox_init_point,
-      hasError: !!(preference as any).error,
-      error: (preference as any).error,
-    });
-
-    console.log('💳 Creando transacción de créditos:', {
-      userId,
-      amount: purchaseData.amount,
-      totalAmount,
-      preferenceId: preference.id,
-      externalReference,
-    });
-
-    // Guardar transacción pendiente con referencia externa
     const transaction = await this.prisma.creditTransaction.create({
       data: {
         userId,
-        amount: purchaseData.amount,
+        amount: totalCredits,
         totalPricePen: totalAmount,
         status: 'PENDING',
         mercadoPagoId: preference.id || externalReference,
@@ -110,7 +156,7 @@ export class CreditsService {
 
     if (!transaction) {
       console.error('❌ Transacción no encontrada para referencia:', referenceId);
-      throw new NotFoundException(`Transacción no encontrada para referencia: ${referenceId}`);
+      throw new NotFoundException(`Transacción no encontrada para referencia: ${ referenceId }`);
     }
 
     console.log('📋 Transacción encontrada:', {
@@ -125,11 +171,11 @@ export class CreditsService {
     // Verificar si la transacción ya fue procesada
     if (transaction.status === 'COMPLETED') {
       console.log('⚠️ Transacción ya fue completada anteriormente');
-      return { 
-        success: true, 
-        credits: transaction.amount, 
+      return {
+        success: true,
+        credits: transaction.amount,
         message: 'Transacción ya procesada anteriormente',
-        alreadyProcessed: true 
+        alreadyProcessed: true
       };
     }
 
@@ -166,12 +212,12 @@ export class CreditsService {
         creditosNuevos: updatedUser.credits,
       });
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         credits: transaction.amount,
         creditsAdded: transaction.amount,
         newBalance: updatedUser.credits,
-        message: `Se agregaron ${transaction.amount} créditos exitosamente`
+        message: `Se agregaron ${ transaction.amount } créditos exitosamente`
       };
     } else {
       console.log('❌ Marcando pago como fallido...');
@@ -181,9 +227,9 @@ export class CreditsService {
         data: { status: 'FAILED' },
       });
 
-      return { 
-        success: false, 
-        message: `Pago ${paymentStatus}: ${this.getPaymentStatusMessage(paymentStatus)}` 
+      return {
+        success: false,
+        message: `Pago ${ paymentStatus }: ${ this.getPaymentStatusMessage(paymentStatus) }`
       };
     }
   }
@@ -197,7 +243,7 @@ export class CreditsService {
       'in_process': 'El pago está siendo procesado',
     };
 
-    return statusMessages[status] || `Estado desconocido: ${status}`;
+    return statusMessages[status] || `Estado desconocido: ${ status }`;
   }
 
   async useCredits(userId: number, useData: UseCreditsDto) {
@@ -238,7 +284,7 @@ export class CreditsService {
     const baseRate = 1;
     const variableRate = 0.5 * Math.random(); // 0 a 0.5
     const creditsPerHour = baseRate + variableRate;
-    
+
     return Math.round(hours * creditsPerHour * 100) / 100;
   }
 
@@ -261,9 +307,9 @@ export class CreditsService {
 
     // Usar hourlyRate si está disponible, sino usar price como fallback
     const hourlyRate = companion.hourlyRate || companion.price;
-    
+
     if (!hourlyRate || hourlyRate <= 0) {
-      throw new BadRequestException(`Tarifa por hora no válida para ${companion.name}`);
+      throw new BadRequestException(`Tarifa por hora no válida para ${ companion.name }`);
     }
 
     // Calcular el costo total en PEN
@@ -291,7 +337,7 @@ export class CreditsService {
 
     const canAfford = userCredits.credits >= calculation.requiredCredits;
 
-    console.log({calculation, userCredits, canAfford})
+    console.log({ calculation, userCredits, canAfford })
 
     return {
       canMakeBooking: canAfford,
@@ -311,7 +357,7 @@ export class CreditsService {
 
     if (userCredits.credits < calculation.requiredCredits) {
       throw new BadRequestException(
-        `Créditos insuficientes. Necesitas ${calculation.requiredCredits} créditos, tienes ${userCredits.credits}`
+        `Créditos insuficientes. Necesitas ${ calculation.requiredCredits } créditos, tienes ${ userCredits.credits }`
       );
     }
 
@@ -341,7 +387,7 @@ export class CreditsService {
   async testMercadoPagoConnection() {
     try {
       console.log('🧪 Probando conexión con MercadoPago desde CreditsService...');
-      
+
       // Crear una preferencia de prueba simple
       const testPreference = await this.paymentsService.createPreference({
         items: [
@@ -358,7 +404,7 @@ export class CreditsService {
           userId: '999',
           credits: '1',
         },
-        external_reference: `test_${Date.now()}`,
+        external_reference: `test_${ Date.now() }`,
         statement_descriptor: 'TEST_DATING_APP',
       });
 

@@ -12,11 +12,11 @@ export class BookingService {
     private prisma: PrismaService,
     @Inject(forwardRef(() => CreditsService))
     private creditsService: CreditsService,
-  ) {}
+  ) { }
 
   async create(createBookingDto: CreateBookingDto) {
     console.log('Creating booking with DTO:', createBookingDto);
-    
+
     try {
       // Calcular créditos necesarios basado en las horas
       const durationHours = createBookingDto.durationHours || 1;
@@ -24,10 +24,10 @@ export class BookingService {
 
       // Verificar si el usuario tiene suficientes créditos
       const userCredits = await this.creditsService.getUserCredits(createBookingDto.clientId);
-      
+
       if (userCredits.credits < requiredCredits) {
         throw new BadRequestException({
-          message: `Créditos insuficientes. Necesitas ${requiredCredits} créditos, tienes ${userCredits.credits}`,
+          message: `Créditos insuficientes. Necesitas ${ requiredCredits } créditos, tienes ${ userCredits.credits }`,
           error: 'INSUFFICIENT_CREDITS',
           requiredCredits,
           currentCredits: userCredits.credits,
@@ -36,17 +36,17 @@ export class BookingService {
       }
 
       // Convertir la fecha string a objeto Date
-      const dateObject = typeof createBookingDto.date === 'string' 
+      const dateObject = typeof createBookingDto.date === 'string'
         ? new Date(createBookingDto.date + 'T00:00:00.000Z') // Agregar tiempo para formato ISO completo
         : createBookingDto.date;
 
       // Convertir startTime y endTime a DateTime completos
-      const dateString = typeof createBookingDto.date === 'string' 
-        ? createBookingDto.date 
+      const dateString = typeof createBookingDto.date === 'string'
+        ? createBookingDto.date
         : createBookingDto.date.toISOString().split('T')[0];
 
-      const startDateTime = new Date(`${dateString}T${createBookingDto.startTime}:00.000Z`);
-      const endDateTime = new Date(`${dateString}T${createBookingDto.endTime}:00.000Z`);
+      const startDateTime = new Date(`${ dateString }T${ createBookingDto.startTime }:00.000Z`);
+      const endDateTime = new Date(`${ dateString }T${ createBookingDto.endTime }:00.000Z`);
 
       // Preparar los datos para Prisma, excluyendo campos undefined
       const bookingData = {
@@ -85,7 +85,7 @@ export class BookingService {
       });
     } catch (error) {
       console.error('Error creating booking:', error);
-      throw new BadRequestException(`Error al crear la reserva: ${error.message}`);
+      throw new BadRequestException(`Error al crear la reserva: ${ error.message }`);
     }
   }
 
@@ -145,15 +145,59 @@ export class BookingService {
     });
 
     if (!booking) {
-      throw new NotFoundException(`Booking with ID ${id} not found`);
+      throw new NotFoundException(`Booking with ID ${ id } not found`);
     }
 
     return successResponse(booking);
   }
 
+  // async updateBookingStatus(bookingId: number, status: string, companionId?: number) {
+  //   try {
+  //     // Verificar que el booking existe
+  //     const booking = await this.prisma.booking.findUnique({
+  //       where: { id: bookingId },
+  //     });
+
+  //     if (!booking) {
+  //       throw new NotFoundException(`Booking with ID ${ bookingId } not found`);
+  //     }
+
+  //     // Si se proporciona companionId, verificar que el companion es el dueño del booking
+  //     if (companionId && booking.companionId !== companionId) {
+  //       throw new ForbiddenException('No tienes permisos para modificar este booking');
+  //     }
+
+  //     // Actualizar el status
+  //     const updatedBooking = await this.prisma.booking.update({
+  //       where: { id: bookingId },
+  //       data: { status },
+  //       include: {
+  //         client: {
+  //           select: {
+  //             id: true,
+  //             name: true,
+  //             email: true,
+  //           }
+  //         },
+  //         companion: {
+  //           select: {
+  //             id: true,
+  //             name: true,
+  //           }
+  //         }
+  //       },
+  //     });
+
+  //     return successResponse(updatedBooking);
+  //   } catch (error) {
+  //     console.error('Error updating booking status:', error);
+  //     throw new BadRequestException(`Error al actualizar el estado del booking: ${ error.message }`);
+  //   }
+  // }
+
   async updateBookingStatus(bookingId: number, status: string, companionId?: number) {
-    // Verificar que el booking existe
-    const booking = await this.prisma.booking.findUnique({
+  return await this.prisma.$transaction(async (tx) => {
+    const booking = await tx.booking.findUnique({
       where: { id: bookingId },
     });
 
@@ -161,13 +205,49 @@ export class BookingService {
       throw new NotFoundException(`Booking with ID ${bookingId} not found`);
     }
 
-    // Si se proporciona companionId, verificar que el companion es el dueño del booking
+    // Verificar permisos si se proporciona companionId
     if (companionId && booking.companionId !== companionId) {
       throw new ForbiddenException('No tienes permisos para modificar este booking');
     }
 
-    // Actualizar el status
-    const updatedBooking = await this.prisma.booking.update({
+    // Si el nuevo estado es REJECTED, devolver los créditos
+    if (status === 'REJECTED') {
+      const existingRefund = await tx.creditTransaction.findFirst({
+        where: {
+          userId: booking.clientId,
+          mercadoPagoId: `REFUND-BOOKING-${booking.id}`,
+          status: 'REFUND',
+        },
+      });
+
+      console.log({existingRefund});
+
+      if (!existingRefund) {
+        // Ejecutar lógica de refund *dentro* de esta transacción
+        await tx.user.update({
+          where: { id: booking.clientId },
+          data: {
+            credits: {
+              increment: booking.creditsUsed ?? 0,
+            },
+          },
+        });
+
+        await tx.creditTransaction.create({
+          data: {
+            userId: booking.clientId,
+            amount: booking.creditsUsed ?? 0,
+            totalPricePen: booking.creditsUsed ?? 0,
+            status: 'REFUND',
+            mercadoPagoId: `REFUND-BOOKING-${booking.id}`,
+            externalReference: `REFUND-BOOKING-${booking.id}`,
+          },
+        });
+      }
+    }
+
+    // Actualizar el estado de la reserva
+    const updatedBooking = await tx.booking.update({
       where: { id: bookingId },
       data: { status },
       include: {
@@ -176,23 +256,24 @@ export class BookingService {
             id: true,
             name: true,
             email: true,
-          }
+          },
         },
         companion: {
           select: {
             id: true,
             name: true,
-          }
-        }
+          },
+        },
       },
     });
 
     return successResponse(updatedBooking);
-  }
+  });
+}
 
   async findPendingByCompanion(companionId: number) {
     const bookings = await this.prisma.booking.findMany({
-      where: { 
+      where: {
         companionId,
         status: 'PENDING'
       },
@@ -214,12 +295,76 @@ export class BookingService {
     return successResponse(bookings);
   }
 
-  update(id: number, updateBookingDto: UpdateBookingDto) {
-    return `This action updates a #${id} booking`;
+  async update(id: number, updateBookingDto: UpdateBookingDto) {
+    // Verificar si existe el booking
+    const existingBooking = await this.prisma.booking.findUnique({
+      where: { id },
+    });
+
+    if (!existingBooking) {
+      throw new NotFoundException(`Booking with ID ${ id } not found`);
+    }
+
+    // Actualizar el booking con los datos proporcionados
+    const updatedBooking = await this.prisma.booking.update({
+      where: { id },
+      data: {
+        ...updateBookingDto,
+        // Asegúrate que campos como fecha o strings tengan el tipo adecuado si es necesario
+        date: updateBookingDto.date ? new Date(updateBookingDto.date) : undefined,
+      },
+    });
+
+    return successResponse({
+      message: 'Booking updated successfully',
+      booking: updatedBooking,
+    });
   }
 
   remove(id: number) {
-    return `This action removes a #${id} booking`;
+    return `This action removes a #${ id } booking`;
+  }
+
+  async refundCredits(userId: number, amount: number, bookingId?: number) {
+  if (amount <= 0) {
+    throw new BadRequestException('El monto a reembolsar debe ser mayor a cero.');
+  }
+
+  return await this.prisma.$transaction(async (tx) => {
+    // Obtener usuario y verificar existencia
+    const user = await tx.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado.');
+    }
+
+    // Actualizar créditos del usuario
+    const updatedUser = await tx.user.update({
+      where: { id: userId },
+      data: {
+        credits: {
+          increment: amount,
+        },
+      },
+    });
+
+    // Registrar en la tabla de transacciones de crédito
+    await tx.creditTransaction.create({
+      data: {
+        userId,
+        amount,
+        totalPricePen: amount,
+        status: 'REFUND',
+        mercadoPagoId: bookingId ? `REFUND-BOOKING-${ bookingId }` : 'REFUND-ADMIN',
+        externalReference: bookingId ? `REFUND-BOOKING-${ bookingId }` : 'REFUND-ADMIN',
+      },
+    });
+
+    return {
+      message: 'Créditos reembolsados correctamente',
+      userId: updatedUser.id,
+      newBalance: updatedUser.credits,
+    };
+  });
   }
 
   async seedTestData() {
@@ -323,7 +468,7 @@ export class BookingService {
       });
     } catch (error) {
       console.error('Error creating test data:', error);
-      throw new BadRequestException(`Error al crear datos de prueba: ${error.message}`);
+      throw new BadRequestException(`Error al crear datos de prueba: ${ error.message }`);
     }
   }
 }

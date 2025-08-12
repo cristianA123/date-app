@@ -1,10 +1,17 @@
-import { IsNumber, Min, Max } from 'class-validator';
+import { IsNumber, Min, Max, IsString, IsBoolean, IsIn, ValidateIf } from 'class-validator';
 import { Transform } from 'class-transformer';
 
+const VALID_PACKAGE_IDS = ['starter', 'popular', 'value', 'premium', 'custom'];
+
 export class PurchaseCreditsDto {
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsString()
+  @IsIn(VALID_PACKAGE_IDS)
+  @Transform(({ value }) => value.trim())
+  packageId: string;
+
+  @ValidateIf((o) => o.packageId === 'custom')
+  @IsNumber()
   @Min(1)
   @Max(1000)
-  @Transform(({ value }) => Math.round(value * 100) / 100)
-  amount: number;
+  amount?: number;
 }

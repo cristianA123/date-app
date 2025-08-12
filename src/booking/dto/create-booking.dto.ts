@@ -1,5 +1,6 @@
 // export class CreateBookingDto {}
 
+import { Type } from 'class-transformer'
 import { IsInt, IsDateString, IsString, Min, MaxLength, IsOptional, IsNumber } from 'class-validator'
 
 export class CreateBookingDto {
@@ -43,7 +44,8 @@ export class CreateBookingDto {
   amountTax?: number
 
   @IsOptional()
-  @IsInt()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 }) // puedes limitar decimales
   @Min(1)
   durationHours?: number
 
